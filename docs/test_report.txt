@@ -1,0 +1,16 @@
+تقرير اختبار الصلاحيات - Narmer Enterprise API
+تاريخ: 2026-04-26
+النتيجة: جميع الاختبارات ناجحة (12/12)
+
+[PASS] تسجيل دخول Admin
+[PASS] Admin - /admin/users
+[PASS] Admin - /analyst/reports
+[PASS] Admin - /viewer/public-data
+[PASS] Analyst ممنوع من /admin/users (403)
+[PASS] Analyst - /analyst/reports
+[PASS] Analyst - /viewer/public-data
+[PASS] Viewer ممنوع من /admin/users (403)
+[PASS] Viewer ممنوع من /analyst/reports (403)
+[PASS] Viewer - /viewer/public-data
+[PASS] تجديد التوكن ناجح
+[PASS] توكن مزور مرفوض (401)

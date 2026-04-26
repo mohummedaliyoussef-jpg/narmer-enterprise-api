@@ -1,0 +1,17 @@
+fastapi
+uvicorn
+pydantic
+pytest
+numpy
+pandas
+streamlit
+plotly
+python-multipart
+ sqlalchemy
+python-jose[cryptography]
+bcrypt==4.0.1
+python-multipart
+python-dotenv
+alembic
+pytest
+psycopg2-binary

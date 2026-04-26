@@ -1,0 +1,36 @@
+# بيئة Python الافتراضية
+venv/
+env/
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# متغيرات البيئة والأسرار
+.env
+*.env.local
+*.env.production
+
+# قاعدة بيانات SQLite
+*.db
+
+# النسخ الاحتياطية
+backups/
+
+# مجلدات IDE
+.vscode/
+.idea/
+
+# ملفات النظام
+.DS_Store
+Thumbs.db
+
+# تقارير التغطية
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.pytest_cache/
+
+# Docker (في حال تم بناء الصور محلياً)
+docker-compose.override.yml

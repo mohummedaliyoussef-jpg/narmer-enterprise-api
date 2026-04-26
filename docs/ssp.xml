@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<system-security-plan xmlns="http://csrc.nist.gov/ns/oscal/1.0"
+                      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                      xsi:schemaLocation="http://csrc.nist.gov/ns/oscal/1.0 oscal_ssp_schema.xsd"
+                      id="ssp-ASAAS-INSIGHT-001"
+                      uuid="c2b5c0a2-5e1f-4f1b-9c8d-1e2a3b4c5d6e">
+  <metadata>
+    <title>ASAAS Insight Platform – System Security Plan (SSP)</title>
+    <last-modified>2026-04-26T17:00:00Z</last-modified>
+    <version>1.0</version>
+    <oscal-version>1.1.2</oscal-version>
+    <published>2026-04-26</published>
+    <document-id scheme="http://myorg.com/ssp">SSP-ASAAS-INSIGHT-2026</document-id>
+    <prop name="implementation-status" value="implemented"/>
+    <role id="author">
+      <title>Security Architect</title>
+    </role>
+    <location>N/A (Cloud-native, development environment)</location>
+  </metadata>
+
+  <system-characteristics>
+    <system-id>ASAAS-INSIGHT-001</system-id>
+    <system-name>ASAAS Insight Analytical Platform</system-name>
+    <description>
+      <p>منصة تحليلية متكاملة للتهديدات والمؤشرات الأمنية والاقتصادية، متصلة بـ ASAAS 2.0 ومصادر حكومية، مع إدارة أدوار متقدمة وتشفير كامل.</p>
+    </description>
+    <security-sensitivity-level>Moderate</security-sensitivity-level>
+    <system-information>
+      <information-type id="CUI">
+        <title>Controlled Unclassified Information</title>
+        <confidentiality-impact>Moderate</confidentiality-impact>
+        <integrity-impact>Moderate</integrity-impact>
+        <availability-impact>Low</availability-impact>
+      </information-type>
+    </system-information>
+    <status>Operational</status>
+    <authorization-boundary>
+      <component uuid="comp-fastapi" type="software">
+        <title>ASAAS Insight API (FastAPI)</title>
+        <description>نقاط النهاية الخلفية ومنطق الأعمال</description>
+        <protocol>HTTPS</protocol>
+        <prop name="version" value="1.0.0"/>
+      </component>
+      <component uuid="comp-database" type="database">
+        <title>PostgreSQL / SQLite Database</title>
+        <description>تخزين المستخدمين والصلاحيات والبيانات</description>
+        <prop name="encryption-at-rest" value="yes (TDE in production)"/>
+      </component>
+      <component uuid="comp-jwt" type="crypto">
+        <title>JWT Authentication (HS256 → RS256)</title>
+        <description>إصدار وتوقيع رموز الوصول باستخدام JWT مع خوارزميات قوية</description>
+      </component>
+      <component uuid="comp-vault" type="secrets">
+        <title>HashiCorp Vault (Secrets Management)</title>
+        <description>تخزين الأسرار والمفاتيح بعيداً عن الشيفرات المصدرية</description>
+        <status>planned</status>
+      </component>
+      <component uuid="comp-backup" type="backup">
+        <title>Automated Database Backups</title>
+        <description>نسخ احتياطي يومي لقاعدة البيانات مع استعادة في أقل من 10 دقائق</description>
+      </component>
+    </authorization-boundary>
+  </system-characteristics>
+
+  <system-implementation>
+    <user-component uuid="users-admin">
+      <title>Admin Role</title>
+      <description>مدير النظام بصلاحيات كاملة</description>
+    </user-component>
+    <user-component uuid="users-analyst">
+      <title>Analyst Role</title>
+      <description>محلل لديه وصول للتقارير والبيانات العامة</description>
+    </user-component>
+    <user-component uuid="users-viewer">
+      <title>Viewer Role</title>
+      <description>مشاهد لديه وصول للبيانات العامة فقط</description>
+    </user-component>
+  </system-implementation>
+
+  <control-implementation>
+    <implemented-requirement uuid="impl-ac-3" control-id="ac-3">
+      <title>Access Enforcement</title>
+      <description>
+        <p>يطبق النظام تحكماً صارماً في الوصول (RBAC) عبر الأدوار admin, analyst, viewer،
+           ويتم التحقق منها عند كل طلب عبر وسيط JWT. أي محاولة للوصول إلى موارد غير مسموحة تُقابل بالرفض 403.</p>
+      </description>
+      <prop name="method" value="Role-Based Access Control (RBAC)"/>
+      <responsible-role role-id="author"/>
+      <by-component component-uuid="comp-fastapi"/>
+    </implemented-requirement>
+
+    <implemented-requirement uuid="impl-ac-7" control-id="ac-7">
+      <title>Unsuccessful Logon Attempts</title>
+      <description>
+        <p>يوثق النظام محاولات الدخول الفاشلة، ويُعيد خطأ 401 دون كشف تفاصيل حساسة.</p>
+      </description>
+      <prop name="max-attempts" value="5 (planned)"/>
+      <by-component component-uuid="comp-fastapi"/>
+    </implemented-requirement>
+
+    <implemented-requirement uuid="impl-ia-2" control-id="ia-2">
+      <title>Identification and Authentication (Organizational Users)</title>
+      <description>
+        <p>يتم تعريف المستخدمين عبر اسم مستخدم وكلمة مرور مشفرة، مع إصدار JWT موقع بـ HS256 (سيُرقى إلى RS256).</p>
+      </description>
+      <by-component component-uuid="comp-fastapi"/>
+      <by-component component-uuid="comp-jwt"/>
+    </implemented-requirement>
+
+    <implemented-requirement uuid="impl-ia-5" control-id="ia-5">
+      <title>Authenticator Management</title>
+      <description>
+        <p>كلمات المرور تُجزّأ باستخدام SHA-256 مع ملح عشوائي فريد لكل مستخدم. الأسرار تُدار عبر متغيرات بيئة وسيتم نقلها إلى Vault.</p>
+      </description>
+      <by-component component-uuid="comp-fastapi"/>
+      <by-component component-uuid="comp-vault"/>
+    </implemented-requirement>
+
+    <implemented-requirement uuid="impl-sc-8" control-id="sc-8">
+      <title>Transmission Confidentiality and Integrity</title>
+      <description>
+        <p>جميع الاتصالات بالخادم مؤمنة عبر TLS 1.3 في بيئة الإنتاج. التطوير المحلي يستخدم HTTP لأغراض الاختبار.</p>
+      </description>
+      <by-component component-uuid="comp-fastapi"/>
+    </implemented-requirement>
+
+    <implemented-requirement uuid="impl-sc-28" control-id="sc-28">
+      <title>Protection of Information at Rest</title>
+      <description>
+        <p>قاعدة البيانات مشفرة في السكون (TDE) في بيئة الإنتاج. النسخ الاحتياطية مشفرة قبل تخزينها خارج الموقع.</p>
+      </description>
+      <by-component component-uuid="comp-database"/>
+    </implemented-requirement>
+
+    <implemented-requirement uuid="impl-cp-2" control-id="cp-2">
+      <title>Contingency Plan</title>
+      <description>
+        <p>خطة تعافي من الكوارث موثقة ومختبرة: نسخ احتياطي يومي، استعادة في أقل من 10 دقائق (بيئة التطوير) أو ساعتين (الإنتاج). تمرين استعادة كل 3 أشهر.</p>
+      </description>
+      <by-component component-uuid="comp-backup"/>
+    </implemented-requirement>
+
+    <implemented-requirement uuid="impl-cp-9" control-id="cp-9">
+      <title>Information System Backup</title>
+      <description>
+        <p>نسخ احتياطي آلي يومي لقاعدة البيانات. النسخ تُخزّن خارج الموقع مع تشفير وفترة احتفاظ 30 يوماً.</p>
+      </description>
+      <by-component component-uuid="comp-backup"/>
+    </implemented-requirement>
+  </control-implementation>
+</system-security-plan>

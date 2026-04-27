@@ -1,17 +1,24 @@
-version: '3.8'
 services:
   web:
     build: .
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    command: >
+      sh -c "echo 'Waiting for PostgreSQL...';
+             while ! nc -z db 5432; do sleep 1; done;
+             echo 'PostgreSQL started.';
+             uvicorn app.main:app --host 0.0.0.0 --port 8000"
     ports:
       - "8000:8000"
     environment:
       - DATABASE_URL=postgresql://narmer:narmer123@db/narmer_db
       - REDIS_URL=redis://redis:6379/0
       - SECRET_KEY=your-production-secret
+      - ENCRYPTION_KEY=my-production-encryption-key
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+    restart: always
     depends_on:
       - db
       - redis
+      - elasticsearch
   db:
     image: postgres:16-alpine
     environment:
@@ -24,6 +31,16 @@ services:
     image: redis:7-alpine
     volumes:
       - redis_data:/data
+  elasticsearch:
+    image: elasticsearch:8.12.0
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+    ports:
+      - "9200:9200"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
 volumes:
   postgres_data:
   redis_data:
+  es_data:

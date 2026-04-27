@@ -16,3 +16,4 @@ alembic
 pytest
 psycopg2-binary
 httpx
+elasticsearch

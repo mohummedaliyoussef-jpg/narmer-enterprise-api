@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.auth import get_current_user, get_current_tenant
@@ -35,3 +35,25 @@ def create_assessment(
     db.commit()
     db.refresh(assessment)
     return {"id": assessment.id, "tenant": tenant_id}
+
+@router.get("/")
+def list_assessments(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    tenant_id: str = Depends(get_current_tenant)
+):
+    assessments = db.query(Assessment).filter(
+        Assessment.tenant_id == tenant_id
+    ).order_by(Assessment.created_at.desc()).limit(50).all()
+    
+    return [
+        {
+            "id": a.id,
+            "tenant": a.tenant_id,
+            "user": a.user_id,
+            "inputs": json.loads(a.inputs_json) if a.inputs_json else None,
+            "v_score": a.v_score,
+            "created_at": a.created_at.isoformat() if a.created_at else None
+        }
+        for a in assessments
+    ]

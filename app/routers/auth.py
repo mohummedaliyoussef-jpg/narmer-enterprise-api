@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 from app import models
-from app.auth import get_db, get_password_hash, verify_password, create_access_token, get_current_user
+from app.database import get_db, get_encryption_key
+from app.auth import get_password_hash, verify_password, create_access_token, get_current_user
 
 router = APIRouter(prefix="/auth", tags=["المصادقة"])
 
@@ -11,16 +13,26 @@ def register(
     username: str,
     password: str,
     role: str = "viewer",
-    email: str = "no-reply@insight.sa",
+    email: str = "user@insight.sa",
     db: Session = Depends(get_db)
 ):
     if db.query(models.User).filter(models.User.username == username).first():
         raise HTTPException(status_code=400, detail="اسم المستخدم موجود مسبقاً")
+
     hashed_pw = get_password_hash(password)
-    new_user = models.User(username=username, email=email, hashed_password=hashed_pw, role=role)
-    db.add(new_user)
+
+    sql = text("""
+        INSERT INTO users (username, email_encrypted, hashed_password, role)
+        VALUES (:username, pgp_sym_encrypt(:email, :key), :hashed_pw, :role)
+    """)
+    db.execute(sql, {
+        "username": username,
+        "email": email,
+        "key": get_encryption_key(),
+        "hashed_pw": hashed_pw,
+        "role": role
+    })
     db.commit()
-    db.refresh(new_user)
     return {"message": f"تم إنشاء المستخدم {username} بدور {role}"}
 
 @router.post("/login")
@@ -28,13 +40,22 @@ def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db)
 ):
-    user = db.query(models.User).filter(models.User.username == form_data.username).first()
-    if not user or not verify_password(form_data.password, user.hashed_password):
+    sql = text("""
+        SELECT id, username, pgp_sym_decrypt(email_encrypted, :key) AS email, hashed_password, role
+        FROM users WHERE username = :username
+    """)
+    result = db.execute(sql, {
+        "username": form_data.username,
+        "key": get_encryption_key()
+    }).first()
+
+    if not result or not verify_password(form_data.password, result.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="بيانات دخول خاطئة"
         )
-    access_token = create_access_token(data={"sub": user.username, "role": user.role})
+
+    access_token = create_access_token(data={"sub": result.username, "role": result.role})
     return {"access_token": access_token, "token_type": "bearer"}
 
 @router.post("/refresh")

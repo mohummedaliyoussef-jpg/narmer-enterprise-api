@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import auth, admin, analyst, viewer
+from app.routers import auth, admin, analyst, viewer, assess
 from app.database import engine, Base
 
 Base.metadata.create_all(bind=engine)
@@ -32,3 +32,5 @@ app.include_router(viewer.router)
 @app.get("/")
 def root():
     return {"message": "ASAAS Insight Platform API"}
+
+app.include_router(assess.router)

@@ -64,3 +64,12 @@ def require_role(*roles: str):
             )
         return current_user
     return role_checker
+
+async def get_current_tenant(
+    token: str = Depends(oauth2_scheme)
+) -> str:
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload.get("tenant_id", "default")
+    except:
+        return "default"

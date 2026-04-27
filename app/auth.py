@@ -30,9 +30,10 @@ def get_password_hash(password: str) -> str:
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
 
-def create_access_token(data: dict, expires_delta: timedelta | None = None):
+def create_access_token(data: dict, tenant_id: str = "default", expires_delta: timedelta | None = None):
     to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=15))
+    to_encode.update({"tenant_id": tenant_id})
+    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=60))
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
@@ -55,6 +56,15 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
         raise credentials_exception
     return user
 
+async def get_current_tenant(
+    token: str = Depends(oauth2_scheme)
+) -> str:
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload.get("tenant_id", "default")
+    except:
+        return "default"
+
 def require_role(*roles: str):
     async def role_checker(current_user: models.User = Depends(get_current_user)):
         if current_user.role not in roles:
@@ -64,12 +74,3 @@ def require_role(*roles: str):
             )
         return current_user
     return role_checker
-
-async def get_current_tenant(
-    token: str = Depends(oauth2_scheme)
-) -> str:
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        return payload.get("tenant_id", "default")
-    except:
-        return "default"

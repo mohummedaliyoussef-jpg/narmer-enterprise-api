@@ -33,4 +33,4 @@ coverage.xml
 .pytest_cache/
 
 # Docker (في حال تم بناء الصور محلياً)
-docker-compose.override.yml
+docker-compose.override.ymlvault.exe
